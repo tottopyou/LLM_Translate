@@ -1,12 +1,16 @@
 import pandas as pd
 import torch
-from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset
 from torchtext.data.utils import get_tokenizer
-from collections import Counter
-from torchtext.vocab import Vocab
-import torch.nn as nn
 import torch.optim as optim
+import torch.nn as nn
+from Models import Decoder,Encoder,Seq2Seq
+import os
+from torch.nn.utils.rnn import pad_sequence
+from Functions import train, translate_sentence, build_vocab, tokenize_and_index
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print("Active device:", device)
 
 # Load the dataset
 data = pd.read_csv('Dataset/Sentence_pairs_EN_UA.tsv', sep='\t', header=None, usecols=[1, 3], names=['english', 'ukrainian'])
@@ -19,18 +23,9 @@ tokenizer_en = get_tokenizer('spacy', language='en_core_web_sm')
 tokenizer_uk = get_tokenizer('spacy', language='uk_core_news_sm')
 
 # Build vocabulary
-def build_vocab(sentences, tokenizer):
-    counter = Counter()
-    for sentence in sentences:
-        counter.update(tokenizer(sentence))
-    return Vocab(counter)
 
 vocab_en = build_vocab(data['english'], tokenizer_en)
 vocab_uk = build_vocab(data['ukrainian'], tokenizer_uk)
-
-# Example of tokenization and indexing
-def tokenize_and_index(sentence, vocab, tokenizer):
-    return [vocab['<bos>']] + [vocab[token] for token in tokenizer(sentence)] + [vocab['<eos>']]
 
 # Tokenize and index all sentences
 data['english'] = data['english'].apply(lambda x: tokenize_and_index(x, vocab_en, tokenizer_en))
@@ -57,3 +52,45 @@ def collate_fn(batch):
 
 dataset = TranslationDataset(data)
 dataloader = DataLoader(dataset, batch_size=64, collate_fn=collate_fn)
+
+for batch in dataloader:
+    english_batch, ukrainian_batch = batch
+    english_batch = english_batch.to(device)
+    ukrainian_batch = ukrainian_batch.to(device)
+    print(english_batch.shape, ukrainian_batch.shape)
+    break
+
+
+INPUT_DIM = len(vocab_en)
+OUTPUT_DIM = len(vocab_uk)
+ENC_EMB_DIM = 256
+DEC_EMB_DIM = 256
+HID_DIM = 512
+N_LAYERS = 2
+ENC_DROPOUT = 0.5
+DEC_DROPOUT = 0.5
+
+enc = Encoder(INPUT_DIM, ENC_EMB_DIM, HID_DIM, N_LAYERS, ENC_DROPOUT)
+dec = Decoder(OUTPUT_DIM, DEC_EMB_DIM, HID_DIM, N_LAYERS, DEC_DROPOUT)
+
+model = Seq2Seq(enc, dec, device).to(device)
+
+optimizer = optim.Adam(model.parameters())
+criterion = nn.CrossEntropyLoss(ignore_index=vocab_uk['<pad>'])
+
+epochs = 10
+CLIP = 1
+model_path = "trained_model.pth"
+if not os.path.exists(model_path):
+    print("Start the training")
+    for epoch in range(epochs):
+        train_loss = train(model, dataloader, optimizer, criterion, CLIP)
+        print(f'Epoch: {epoch+1:02}, Train Loss: {train_loss:.3f}')
+    torch.save(model.state_dict(), model_path)
+else:
+    print("Model already trained")
+
+sentence = "Hello, how are you?"
+translated_sentence = translate_sentence(sentence, vocab_en, vocab_uk, model, device)
+print(' '.join(translated_sentence))
+
