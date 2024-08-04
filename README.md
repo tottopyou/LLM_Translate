@@ -1,5 +1,13 @@
 # LLM_Translate
 
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-1.7%2B-red)
+![Transformers](https://img.shields.io/badge/Transformers-4.0%2B-purple)
+![NumPy](https://img.shields.io/badge/NumPy-1.19%2B-orange)
+![Pandas](https://img.shields.io/badge/Pandas-1.1%2B-green)
+![Torchtext](https://img.shields.io/badge/Torchtext-0.8%2B-blue)
+![Matplotlib](https://img.shields.io/badge/Matplotlib-3.3%2B-yellow)
+
 **LLM_Translate** is an advanced machine learning model designed to bridge the language gap between English and Ukrainian. Leveraging the Tatoeba dataset, this project aims to achieve highly accurate translations through continuous training and improvement. 
 
 ## Project Overview
