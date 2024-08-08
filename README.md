@@ -16,7 +16,7 @@
 
 - **Training Duration:** 24 hours
 - **Epochs:** 70
-- **Training Loss:** Reduced from 1.923 to 0.749
+- **Training Loss:** Reduced from 4.923 to 0.749
 
 ## Training Insights
 
